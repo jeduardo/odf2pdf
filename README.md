@@ -22,11 +22,11 @@ Output parameters:
 
 ## Testing
 
-curl -v -H "Content-Type: application/vnd.oasis.opendocument.text" -o document.pdf http://localhost:4000/api/v1/pdf -d @samples/0116GS3-OpenSourceStandardsDoc.odt
+curl -v -H "Content-Type: application/vnd.oasis.opendocument.text" -o document.pdf http://localhost:4000/api/v1/pdf --data-binary @samples/0116GS3-OpenSourceStandardsDoc.odt
 
 ## Benchmarking
 
-ab -n 1 -c 1 -T 'application/vnd.oasis.opendocument.text' -p samples/0116GS3-OpenSourceStandardsDoc.odt http://localhost:4000/api/v1/pdf
+ab -n 100 -c 10 -T 'application/vnd.oasis.opendocument.text' -p samples/0116GS3-OpenSourceStandardsDoc.odt http://localhost:4000/api/v1/pdf
 
 ## TODOs
 
@@ -40,4 +40,5 @@ ab -n 1 -c 1 -T 'application/vnd.oasis.opendocument.text' -p samples/0116GS3-Ope
 * LibreOffice Filters: https://ask.libreoffice.org/en/question/59186/what-are-the-5x-impress-importexport-filters/
 * Reading streaming data with Werkzeug: http://blog.pelicandd.com/article/80/streaming-input-and-output-in-flask
 * Official reference for HTTP return codes: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+* OpenOffice Connection URL: https://www.openoffice.org/udk/common/man/spec/uno-url.html
 

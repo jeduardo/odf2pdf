@@ -149,7 +149,8 @@ class LibreOffice(object):
         self.port = port
         self.local_context = uno.getComponentContext()
         self.resolver = self.local_context.ServiceManager.createInstanceWithContext("com.sun.star.bridge.UnoUrlResolver", self.local_context)
-        self.connectionString = "socket,host=%s,port=%s,tcpNoDelay=1;urp;StarOffice.ComponentContext" % (self.host, self.port)
+        # self.connectionString = "socket,host=%s,port=%s,tcpNoDelay=1;urp;StarOffice.ComponentContext" % (self.host, self.port)
+        self.connectionString = "pipe,name=odf2pdf;urp;StarOffice.ComponentContext"
         self.context = None
         self.desktop = None
         self.runUnoProcess()
