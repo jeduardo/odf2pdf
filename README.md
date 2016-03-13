@@ -13,18 +13,21 @@ The server should be called through HTTP.
 Converts a document to PDF.
 
 Input parameters:
-- (Header) Content-Type: MIME type of the document. Supported content types:
-* application/vnd.oasis.opendocument.text
-- (Body) Request body: binary file to be conveted
+
+* (Header) Content-Type: MIME type of the document. Supported content types:
+    * application/vnd.oasis.opendocument.text (odt)
+    * application/vnd.openxmlformats-officedocument.wordprocessingml.document (docx)
+* (Body) Request body: binary file to be conveted
 Output parameters:
-- (HTTP Code) HTTP result code: 200 OK
-- (Body) Response body: conversion result
+* (HTTP Code) HTTP result code: 200 OK
+* (Body) Response body: conversion result
 
 HTTP Return Codes:
-- 200: document converted successfully
-- 411: input document has zero length
-- 415: input document format not supported
-- 500: internal application error
+
+* 200: document converted successfully
+* 411: input document has zero length
+* 415: input document format not supported
+* 500: internal application error
 
 ## Testing
 
@@ -37,13 +40,12 @@ curl -v -H "Content-Type: application/vnd.oasis.opendocument.text" -o document.p
 
 ## TODOs
 
-* Instantiate more than one libreoffice instance for conversion (bottleneck seems to be a single instance)
 * Unique IDs per request for logging
-* Cron job or Celery task for removing old files
 
 ## Fonts
 
 For best results, install the following packages:
+
 * MS Core Fonts: apt-get install ttf-mscorefonts-installer)
 * Carlito and Caladea (to replace Calibri and Cambria): apt-get install fonts-crosextra-carlito fonts-crosextra-caladea
 * PowerPoint Viewer 97 fonts: https://gist.github.com/maxwelleite/10774746
@@ -56,5 +58,6 @@ For best results, install the following packages:
 * Reading streaming data with Werkzeug: http://blog.pelicandd.com/article/80/streaming-input-and-output-in-flask
 * Official reference for HTTP return codes: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 * OpenOffice Connection URL: https://www.openoffice.org/udk/common/man/spec/uno-url.html
+* Starting multiple LibreOffice processes concurrently: https://ask.libreoffice.org/en/question/42975/how-can-i-run-multiple-instances-of-sofficebin-at-a-time/
 
 
