@@ -23,6 +23,7 @@
 
 """
 
+import contextlib
 import logging
 import uno
 import subprocess
@@ -247,9 +248,10 @@ class LibreOffice(object):
     def shutdown(self):
         logger.debug("Shutting down LibreOffice process under pid %d", self.proc.pid)
         self.proc.kill()
-        path = "/tmp/*%s*" % self.pipe
-        logger.debug("Removing all files under %s" % path)
-        shutil.rmtree(path)
+        with contextlib.suppress(FileNotFoundError):
+            path = "/tmp/libreoffice-%s" % self.pipe
+            logger.debug("Removing all files under %s" % path)
+            shutil.rmtree(path)
 
 if __name__ == '__main__':
     # Simple command line support for testing
