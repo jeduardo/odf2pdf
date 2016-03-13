@@ -162,9 +162,10 @@ class LibreOffice(object):
         # self.connectionString = "socket,host=%s,port=%s,tcpNoDelay=1;urp;StarOffice.ComponentContext" % (self.host, self.port)
         self.pipe = "odf2pdf-%d" % randint(1, 10000);
         self.connectionString = "pipe,name=%s;urp;StarOffice.ComponentContext" % self.pipe
+        logger.debug("LibreOffice connection string set to %s", self.connectionString)
         self.context = None
         self.desktop = None
-        self.runUnoProcess()
+        self.runProcess()
 
         try:
             self.context = self.resolver.resolve("uno:%s" % self.connectionString)
@@ -236,7 +237,7 @@ class LibreOffice(object):
             raise LibreOfficeConversionException(e)
         return None
 
-    def runUnoProcess(self):
+    def runProcess(self):
         # subprocess.Popen('soffice --headless --norestore --accept="%s"' % self.connectionString, shell=True, stdin=None, stdout=None, stderr=None)
         self.proc = subprocess.Popen('soffice "-env:UserInstallation=file:////tmp/libreoffice-%s" --headless --norestore --accept="%s"' % (self.pipe, self.connectionString), shell=True, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
         self.pid = self.proc.pid
@@ -251,7 +252,7 @@ class LibreOffice(object):
         with contextlib.suppress(FileNotFoundError):
             path = "/tmp/libreoffice-%s" % self.pipe
             logger.debug("Removing all files under %s" % path)
-            shutil.rmtree(path)
+            shutil.rmtree(path, True)
 
 if __name__ == '__main__':
     # Simple command line support for testing

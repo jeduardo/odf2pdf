@@ -6,7 +6,23 @@ only in .odt (word processing) documents.
 
 The server should be called through HTTP.
 
-## API definitions
+## Configuration
+
+Application configuration is controlled through environment variables.
+
+| Variable  | Description | Default value |
+|---|---|---|
+| ODF2PDF_LOG_DIR | Location in the filesystem where logs will be saved.  | Default path where the application is located  |
+| ODF2PDF_HOST  | Host from which application requests will be served. | 0.0.0.0  |
+| ODF2PDF_PORT  | Default port number.  | 4000 |
+| ODF2PDF_LOG_LEVEL | Log level to be used in the application.  | INFO  |
+| ODF2PDF_WORKERS | How many workers will be instantiated. Each worker is bound to a LibreOffice server instance. | One worker per processor core. |
+| ODF2PDF_REQUEST_CHUNK_SIZE | Size of the byte buffer that will be used to read requests from the API caller in bytes.  | 40960 bytes |
+
+
+## API methods
+
+The API exposes the following functions:
 
 ### /api/v1/pdf
 

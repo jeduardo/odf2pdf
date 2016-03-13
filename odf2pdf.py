@@ -10,10 +10,6 @@ from flask import Flask, jsonify, make_response, request, send_file
 
 from libreoffice import LibreOffice
 
-# Application configuration
-REQUEST_CHUNK_SIZE = 40960
-LIBREOFFICE_BACKENDS_PER_HANDLER = 1
-
 VALID_MIME_TYPES = {
     'application/vnd.oasis.opendocument.text': 'odt',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
@@ -34,13 +30,18 @@ VALID_MIME_TYPES = {
     # 'application/vnd.openofficeorg.extension': 'oxt'
 }
 
+# Application configuration
+REQUEST_CHUNK_SIZE = os.environ.get('ODF2PDF_REQUEST_CHUNK_SIZE', 40960)
+LOG_LEVEL = os.environ.get('ODF2PDF_LOG_LEVEL', 'INFO')
+
 # Configuring application logger
-logging.basicConfig(level = logging.DEBUG)
+logging.basicConfig(level=logging._nameToLevel[LOG_LEVEL])
 logger = logging.getLogger(__name__)
 
 # Instantiating application
 app = Flask(__name__)
 logger.info("Booting up odf2pdf converter")
+logger.debug("Debug mode is enabled")
 backend = LibreOffice()
 logger.info("odf2pdf converter ready to process requests")
 
