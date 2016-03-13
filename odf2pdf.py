@@ -7,11 +7,11 @@ import tempfile
 
 from flask import Flask, jsonify, make_response, request, send_file, after_this_request
 from libreoffice import LibreOffice
+from threading import Lock
 
 # Application configuration
-LIBREOFFICE_DEFAULT_HOST = 'localhost'
-LIBREOFFICE_DEFAULT_PORT = 6519
 REQUEST_CHUNK_SIZE = 4096
+LIBREOFFICE_BACKENDS_PER_HANDLER = 10
 
 VALID_MIME_TYPES = {
     'application/vnd.oasis.opendocument.text': 'odt',
@@ -36,16 +36,42 @@ VALID_MIME_TYPES = {
 # Configuring application logger
 logging.basicConfig(level = logging.INFO)
 logger = logging.getLogger(__name__)
-handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+#handler = logging.StreamHandler(sys.stdout)
+#formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#handler.setFormatter(formatter)
+#  logger.addHandler(handler)
 
 # Instantiating application
 app = Flask(__name__)
 
-# Instantiating Libre Office connection
-office = LibreOffice(LIBREOFFICE_DEFAULT_HOST, LIBREOFFICE_DEFAULT_PORT)
+class Backend:
+    def __init__(self):
+        # Instantiating Libre Office connection
+        self.backends = []
+        for i in range(0, LIBREOFFICE_BACKENDS_PER_HANDLER):
+            logger.debug("Instantiating LibreOffice backend %d" % (i + 1))
+            self.backends.append(LibreOffice())
+        logger.info("%d LibreOffice backends instantiated" % LIBREOFFICE_BACKENDS_PER_HANDLER)
+
+        for backend in self.backends:
+            logger.debug(backend)
+        self.current = 0
+        self.lock = Lock()
+
+    def next(self):
+        try:
+            self.lock.acquire()
+            current = self.current
+            if current >= len(self.backends):
+                current = 0
+            backend = self.backends[current]
+            self.current = current + 1
+            logger.debug("Returning backend %d (%s)" % (current, backend))
+            return backend
+        finally:
+            self.lock.release()
+
+backend = Backend()
 
 @app.route('/api/v1/pdf', methods = ['POST'])
 def convert():
@@ -79,14 +105,15 @@ def convert():
         # It also cannot be deleted otherwise LibreOffice cannot find it.
         tmp.close()
 
-        logger.debug("Converting %s to %s.pdf" % (tmp.name, tmp.name))
-        if office.convertFile(suffix, "pdf", tmp.name):
-            res = tmp.name.replace("." + suffix, ".pdf")
-
+        res = tmp.name.replace("." + suffix, ".pdf")
+        logger.debug("Converting %s to %s" % (tmp.name, res))
+        service = backend.next()
+        if service.convertFile(suffix, "pdf", tmp.name):
             logger.debug("Sending file %s back to caller" % res)
             return send_file(res)
         else:
-            error = "Error converting file: %s" % office.lastError
+            # TODO: this is definitely not safe or accurate
+            error = "Error converting file: %s" % service.lastError
             logger.error(error)
             return make_response(jsonify({'error': error}), 500)
 

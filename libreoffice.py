@@ -23,6 +23,7 @@
 
 """
 
+import logging
 import uno
 import subprocess
 import time
@@ -30,10 +31,10 @@ import os
 import sys
 
 from enum import Enum
+from random import randint
 from com.sun.star.beans import PropertyValue
 
-LIBREOFFICE_DEFAULT_PORT = 6519
-LIBREOFFICE_DEFAULT_HOST = "localhost"
+logger = logging.getLogger(__name__)
 
 class DocumentFamily(Enum):
     TextDocument = 0
@@ -144,13 +145,12 @@ LIBREOFFICE_EXPORT_TYPES = {
 
 class LibreOffice(object):
 
-    def __init__(self, host=LIBREOFFICE_DEFAULT_HOST, port=LIBREOFFICE_DEFAULT_PORT):
-        self.host = host
-        self.port = port
+    def __init__(self):
         self.local_context = uno.getComponentContext()
         self.resolver = self.local_context.ServiceManager.createInstanceWithContext("com.sun.star.bridge.UnoUrlResolver", self.local_context)
         # self.connectionString = "socket,host=%s,port=%s,tcpNoDelay=1;urp;StarOffice.ComponentContext" % (self.host, self.port)
-        self.connectionString = "pipe,name=odf2pdf;urp;StarOffice.ComponentContext"
+        self.pipe = "odf2pdf-%d" % randint(1, 10000);
+        self.connectionString = "pipe,name=%s;urp;StarOffice.ComponentContext" % self.pipe
         self.context = None
         self.desktop = None
         self.runUnoProcess()
@@ -159,6 +159,7 @@ class LibreOffice(object):
         try:
             self.context = self.resolver.resolve("uno:%s" % self.connectionString)
             self.desktop = self.context.ServiceManager.createInstanceWithContext("com.sun.star.frame.Desktop", self.context)
+            logger.debug("Instantiated LibreOffice: PID %d, pipe: %s" % (self.pid, self.pipe))
         except Exception as e:
             self.__lastErrorMessage = str(e)
 
@@ -240,8 +241,12 @@ class LibreOffice(object):
 
     def runUnoProcess(self):
         # subprocess.Popen('soffice --headless --norestore --accept="%s"' % self.connectionString, shell=True, stdin=None, stdout=None, stderr=None)
-        subprocess.Popen('soffice --headless --norestore --accept="%s"' % self.connectionString, shell=True, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
+        popen_info = subprocess.Popen('soffice "-env:UserInstallation=file:////tmp/libreoffice-%s" --headless --norestore --accept="%s"' % (self.pipe, self.connectionString), shell=True, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
+        self.pid = popen_info.pid
         time.sleep(3)
+
+    def __str__(self):
+        return "LibreOffice instance with PID %d and pipe %s" % (self.pid, self.pipe)
 
 if __name__ == '__main__':
     # Simple command line support for testing

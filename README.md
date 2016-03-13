@@ -30,8 +30,16 @@ ab -n 100 -c 10 -T 'application/vnd.oasis.opendocument.text' -p samples/0116GS3-
 
 ## TODOs
 
+* Instantiate more than one libreoffice instance for conversion (bottleneck seems to be a single instance)
 * Unique IDs per request for logging
 * Cron job or Celery task for removing old files
+
+## Fonts
+
+For best results, install the following packages:
+* MS Core Fonts: apt-get install ttf-mscorefonts-installer)
+* Carlito and Caladea (to replace Calibri and Cambria): apt-get install fonts-crosextra-carlito fonts-crosextra-caladea
+* PowerPoint Viewer 97 fonts: https://gist.github.com/maxwelleite/10774746
 
 ## References
 
@@ -41,4 +49,5 @@ ab -n 100 -c 10 -T 'application/vnd.oasis.opendocument.text' -p samples/0116GS3-
 * Reading streaming data with Werkzeug: http://blog.pelicandd.com/article/80/streaming-input-and-output-in-flask
 * Official reference for HTTP return codes: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 * OpenOffice Connection URL: https://www.openoffice.org/udk/common/man/spec/uno-url.html
+
 
