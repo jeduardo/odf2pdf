@@ -28,6 +28,7 @@ import uno
 import subprocess
 import time
 import os
+import shutil
 import sys
 
 from enum import Enum
@@ -143,6 +144,15 @@ LIBREOFFICE_EXPORT_TYPES = {
     }
 }
 
+class LibreOfficeInstantiationException(Exception):
+    pass
+
+class LibreOfficeTerminationException(Exception):
+    pass
+
+class LibreOfficeConversionException(Exception):
+    pass
+
 class LibreOffice(object):
 
     def __init__(self):
@@ -154,26 +164,20 @@ class LibreOffice(object):
         self.context = None
         self.desktop = None
         self.runUnoProcess()
-        self.__lastErrorMessage = ""
 
         try:
             self.context = self.resolver.resolve("uno:%s" % self.connectionString)
             self.desktop = self.context.ServiceManager.createInstanceWithContext("com.sun.star.frame.Desktop", self.context)
             logger.info("Instantiated LibreOffice: PID %d, pipe: %s" % (self.pid, self.pipe))
         except Exception as e:
-            self.__lastErrorMessage = str(e)
-
-    @property 
-    def lastError(self):
-        return self.__lastErrorMessage
+            raise LibreOfficeInstantiationException(e)
 
     def terminateProcess(self):
         try:
             if self.desktop:
                 self.desktop.terminate()
         except Exception as e:
-            self.__lastErrorMessage = str(e)
-            return False
+            raise LibreOfficeTerminationException(e)
 
         return True
 
@@ -181,7 +185,6 @@ class LibreOffice(object):
         if self.desktop:
             tOldFileName = os.path.splitext(inputFilename)
             outputFilename = "%s.%s" % (tOldFileName[0], outputFormat)
-            #inputFormat = tOldFileName[1].replace(".","") # Temporary files will have no extension
             inputUrl = uno.systemPathToFileUrl(os.path.abspath(inputFilename))
             outputUrl = uno.systemPathToFileUrl(os.path.abspath(outputFilename))
 
@@ -195,8 +198,7 @@ class LibreOffice(object):
                 try:
                     doc.refresh()
                 except Exception as e:
-                    print(e)
-                    pass
+                    raise LibreOfficeConversionException(e)
 
                 docFamily = self.getDocumentFamily(doc)
                 if docFamily:
@@ -204,13 +206,8 @@ class LibreOffice(object):
                         outputProperties = LIBREOFFICE_EXPORT_TYPES[outputFormat][docFamily]
                         doc.storeToURL(outputUrl, self.propertyTuple(outputProperties))
                         doc.close(True)
-
-                        return True
                     except Exception as e:
-                        self.__lastErrorMessage = str(e)
-        
-        # self.terminateProcess() # This kills the process if an unsupported document is sent.
-        return False
+                        raise LibreOfficeConversionException(e)
 
     def propertyTuple(self, propDict):
         properties = []
@@ -234,19 +231,25 @@ class LibreOffice(object):
                 return DocumentFamily.Presentation
             if doc.supportsService("com.sun.star.drawing.DrawingDocument"):
                 return DocumentFamily.Graphics
-        except:
-            pass
-
+        except Exception as e:
+            raise LibreOfficeConversionException(e)
         return None
 
     def runUnoProcess(self):
         # subprocess.Popen('soffice --headless --norestore --accept="%s"' % self.connectionString, shell=True, stdin=None, stdout=None, stderr=None)
-        popen_info = subprocess.Popen('soffice "-env:UserInstallation=file:////tmp/libreoffice-%s" --headless --norestore --accept="%s"' % (self.pipe, self.connectionString), shell=True, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
-        self.pid = popen_info.pid
+        self.proc = subprocess.Popen('soffice "-env:UserInstallation=file:////tmp/libreoffice-%s" --headless --norestore --accept="%s"' % (self.pipe, self.connectionString), shell=True, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
+        self.pid = self.proc.pid
         time.sleep(3)
 
     def __str__(self):
         return "LibreOffice instance with PID %d and pipe %s" % (self.pid, self.pipe)
+
+    def shutdown(self):
+        logger.debug("Shutting down LibreOffice process under pid %d", self.proc.pid)
+        self.proc.kill()
+        path = "/tmp/*%s*" % self.pipe
+        logger.debug("Removing all files under %s" % path)
+        shutil.rmtree(path)
 
 if __name__ == '__main__':
     # Simple command line support for testing

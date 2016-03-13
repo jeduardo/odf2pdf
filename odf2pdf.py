@@ -1,12 +1,14 @@
 __author__ = 'jeduardo'
 
+import atexit
+import contextlib
 import logging
 import os
 import tempfile
 
-from flask import Flask, jsonify, make_response, request, send_file, after_this_request
+from flask import Flask, jsonify, make_response, request, send_file
+
 from libreoffice import LibreOffice
-from threading import Lock
 
 # Application configuration
 REQUEST_CHUNK_SIZE = 40960
@@ -35,39 +37,11 @@ VALID_MIME_TYPES = {
 # Configuring application logger
 logging.basicConfig(level = logging.DEBUG)
 logger = logging.getLogger(__name__)
-#handler = logging.StreamHandler(sys.stdout)
-#formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-#handler.setFormatter(formatter)
-#  logger.addHandler(handler)
-
-class Backend:
-    def __init__(self):
-        # Instantiating Libre Office connection
-        self.backends = []
-        for i in range(0, LIBREOFFICE_BACKENDS_PER_HANDLER):
-            logger.debug("Instantiating LibreOffice backend %d" % (i + 1))
-            self.backends.append(LibreOffice())
-        logger.info("LibreOffice backends instantiated: %d" % LIBREOFFICE_BACKENDS_PER_HANDLER)
-        self.current = 0
-        self.lock = Lock()
-
-    def next(self):
-        try:
-            self.lock.acquire()
-            current = self.current
-            if current >= len(self.backends):
-                current = 0
-            backend = self.backends[current]
-            self.current = current + 1
-            logger.debug("Returning backend %d (%s)" % (current, backend))
-            return backend
-        finally:
-            self.lock.release()
 
 # Instantiating application
 app = Flask(__name__)
 logger.info("Booting up odf2pdf converter")
-backend = Backend()
+backend = LibreOffice()
 logger.info("odf2pdf converter ready to process requests")
 
 @app.route('/api/v1/pdf', methods = ['POST'])
@@ -103,20 +77,23 @@ def convert_pdf():
 
         res = tmp.name.replace("." + suffix, ".pdf")
         logger.debug("Converting %s to %s" % (tmp.name, res))
-        service = backend.next()
         try:
-            if service.convertFile(suffix, "pdf", tmp.name):
-                logger.debug("Sending file %s back to caller" % res)
-                return send_file(res)
-            else:
-                # TODO: this is definitely not safe or accurate
-                error = "Error converting file: %s" % service.lastError
-                logger.error(error)
-                return make_response(jsonify({'error': error}), 500)
+            backend.convertFile(suffix, "pdf", tmp.name)
+            logger.debug("Sending file %s back to caller" % res)
+            return send_file(res)
+        except Exception as e:
+            return make_response(jsonify({'error': str(e)}), 500)
         finally:
-            logger.debug("Removing temp file %s", tmp.name)
-            os.remove(tmp.name)
+            with contextlib.suppress(FileNotFoundError):
+                logger.debug("Removing temp file %s", tmp.name)
+                os.remove(tmp.name)
+                logger.debug("Removing temp PDF file %s", res)
+                os.remove(res)
 
+@atexit.register
+def cleanup():
+    logger.info("Shutting down odf2pdf converter")
+    backend.shutdown()
 
 if __name__ == '__main__':
     app.run(debug = False, port = 4000)
