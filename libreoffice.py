@@ -159,7 +159,7 @@ class LibreOffice(object):
         try:
             self.context = self.resolver.resolve("uno:%s" % self.connectionString)
             self.desktop = self.context.ServiceManager.createInstanceWithContext("com.sun.star.frame.Desktop", self.context)
-            logger.debug("Instantiated LibreOffice: PID %d, pipe: %s" % (self.pid, self.pipe))
+            logger.info("Instantiated LibreOffice: PID %d, pipe: %s" % (self.pid, self.pipe))
         except Exception as e:
             self.__lastErrorMessage = str(e)
 

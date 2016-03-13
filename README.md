@@ -8,7 +8,7 @@ The server should be called through HTTP.
 
 ## API definitions
 
-###  /api/v1/pdf
+### /api/v1/pdf
 
 Converts a document to PDF.
 
@@ -20,13 +20,20 @@ Output parameters:
 - (HTTP Code) HTTP result code: 200 OK
 - (Body) Response body: conversion result
 
+HTTP Return Codes:
+- 200: document converted successfully
+- 411: input document has zero length
+- 415: input document format not supported
+- 500: internal application error
+
 ## Testing
 
 curl -v -H "Content-Type: application/vnd.oasis.opendocument.text" -o document.pdf http://localhost:4000/api/v1/pdf --data-binary @samples/0116GS3-OpenSourceStandardsDoc.odt
 
 ## Benchmarking
 
-ab -n 100 -c 10 -T 'application/vnd.oasis.opendocument.text' -p samples/0116GS3-OpenSourceStandardsDoc.odt http://localhost:4000/api/v1/pdf
+* Simple document: ab -n 100 -c 10 -T 'application/vnd.oasis.opendocument.text' -p samples/lorem.odt http://localhost:4000/api/v1/pdf
+* Complex document: ab -n 100 -c 10 -T 'application/vnd.oasis.opendocument.text' -p samples/lorem.odt http://localhost:4000/api/v1/pdf
 
 ## TODOs
 

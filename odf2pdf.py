@@ -1,8 +1,7 @@
 __author__ = 'jeduardo'
 
-import os
-import sys
 import logging
+import os
 import tempfile
 
 from flask import Flask, jsonify, make_response, request, send_file, after_this_request
@@ -10,8 +9,8 @@ from libreoffice import LibreOffice
 from threading import Lock
 
 # Application configuration
-REQUEST_CHUNK_SIZE = 4096
-LIBREOFFICE_BACKENDS_PER_HANDLER = 10
+REQUEST_CHUNK_SIZE = 40960
+LIBREOFFICE_BACKENDS_PER_HANDLER = 1
 
 VALID_MIME_TYPES = {
     'application/vnd.oasis.opendocument.text': 'odt',
@@ -34,15 +33,12 @@ VALID_MIME_TYPES = {
 }
 
 # Configuring application logger
-logging.basicConfig(level = logging.INFO)
+logging.basicConfig(level = logging.DEBUG)
 logger = logging.getLogger(__name__)
 #handler = logging.StreamHandler(sys.stdout)
 #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 #handler.setFormatter(formatter)
 #  logger.addHandler(handler)
-
-# Instantiating application
-app = Flask(__name__)
 
 class Backend:
     def __init__(self):
@@ -51,10 +47,7 @@ class Backend:
         for i in range(0, LIBREOFFICE_BACKENDS_PER_HANDLER):
             logger.debug("Instantiating LibreOffice backend %d" % (i + 1))
             self.backends.append(LibreOffice())
-        logger.info("%d LibreOffice backends instantiated" % LIBREOFFICE_BACKENDS_PER_HANDLER)
-
-        for backend in self.backends:
-            logger.debug(backend)
+        logger.info("LibreOffice backends instantiated: %d" % LIBREOFFICE_BACKENDS_PER_HANDLER)
         self.current = 0
         self.lock = Lock()
 
@@ -71,10 +64,14 @@ class Backend:
         finally:
             self.lock.release()
 
+# Instantiating application
+app = Flask(__name__)
+logger.info("Booting up odf2pdf converter")
 backend = Backend()
+logger.info("odf2pdf converter ready to process requests")
 
 @app.route('/api/v1/pdf', methods = ['POST'])
-def convert():
+def convert_pdf():
     content_type = request.headers.get('Content-type')
     if content_type not in VALID_MIME_TYPES:
         error = "%s: format not supported" % content_type
@@ -88,9 +85,9 @@ def convert():
         error = "request data has zero length"
         return make_response(jsonify({'error': error}), 411)
 
-    # All good, let's convert the file
+    # Receiving the temporary file
     logger.debug("Received request for content %s of size %d. Suffix is %s" % (content_type, content_length, suffix))
-    with tempfile.NamedTemporaryFile(suffix = '.' + suffix, delete = False) as tmp:
+    with tempfile.NamedTemporaryFile(suffix='.' + suffix, delete=False) as tmp:
         # Saving request to file
         saved = 0
         while True:
@@ -101,21 +98,25 @@ def convert():
                 break
             tmp.write(chunk)
         logger.debug("Content written to %s" % tmp.name)
-        # File has to be closed otherwise LibreOffice cannot convert it.
-        # It also cannot be deleted otherwise LibreOffice cannot find it.
+        # Files need to be closed but not deleted (heh) to be converted.
         tmp.close()
 
         res = tmp.name.replace("." + suffix, ".pdf")
         logger.debug("Converting %s to %s" % (tmp.name, res))
         service = backend.next()
-        if service.convertFile(suffix, "pdf", tmp.name):
-            logger.debug("Sending file %s back to caller" % res)
-            return send_file(res)
-        else:
-            # TODO: this is definitely not safe or accurate
-            error = "Error converting file: %s" % service.lastError
-            logger.error(error)
-            return make_response(jsonify({'error': error}), 500)
+        try:
+            if service.convertFile(suffix, "pdf", tmp.name):
+                logger.debug("Sending file %s back to caller" % res)
+                return send_file(res)
+            else:
+                # TODO: this is definitely not safe or accurate
+                error = "Error converting file: %s" % service.lastError
+                logger.error(error)
+                return make_response(jsonify({'error': error}), 500)
+        finally:
+            logger.debug("Removing temp file %s", tmp.name)
+            os.remove(tmp.name)
+
 
 if __name__ == '__main__':
     app.run(debug = False, port = 4000)
