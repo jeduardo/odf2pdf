@@ -1,0 +1,14 @@
+[Unit]
+Description=ODF2PDF Document Conversion server
+After=syslog.target network.target
+
+[Service]
+Type=forking
+PIDFile=/var/run/odf2pdf.pid
+EnvironmentFile=-/etc/default/odf2pdf
+ExecStart=$ODF2PDF_DIR/odf2pdf
+ExecReload=/bin/kill $(cat /var/run/odf2pdf.pid) && $ODF2PDF_DIR/odf2pdf
+ExecStop=/bin/kill $(cat /var/run/odf2pdf.pid)
+
+[Install]
+WantedBy=multi-user.target
