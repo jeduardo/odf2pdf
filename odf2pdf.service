@@ -3,11 +3,13 @@ Description=ODF2PDF Document Conversion server
 After=syslog.target network.target
 
 [Service]
-Type=forking
+User=root
+Group=root
+WorkingDirectory=/srv/odf2pdf
 PIDFile=/var/run/odf2pdf.pid
 EnvironmentFile=-/etc/default/odf2pdf
-ExecStart=$ODF2PDF_DIR/odf2pdf
-ExecReload=/bin/kill $(cat /var/run/odf2pdf.pid) && $ODF2PDF_DIR/odf2pdf
+ExecStart=/srv/odf2pdf/odf2pdf
+ExecReload=/bin/kill $(cat /var/run/odf2pdf.pid) && /srv/odf2pdf/odf2pdf
 ExecStop=/bin/kill $(cat /var/run/odf2pdf.pid)
 
 [Install]

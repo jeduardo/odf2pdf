@@ -1,8 +1,6 @@
 # ODF2PDF
 
-ODF2PDF is a converter server based on Flask that will receive open document files
-and will return converted PDF files. The initial implementation should focus
-only in .odt (word processing) documents. 
+ODF2PDF is a server based on Flask that receives open document files and returns converted PDF files. The initial implementation focus on .odt (word processing) documents with .docx as an optional support.
 
 The server should be called through HTTP.
 
@@ -18,7 +16,6 @@ Application configuration is controlled through environment variables.
 | ODF2PDF_LOG_LEVEL | Log level to be used in the application.  | INFO  |
 | ODF2PDF_WORKERS | How many workers will be instantiated. Each worker is bound to a LibreOffice server instance. | One worker per processor core. |
 | ODF2PDF_REQUEST_CHUNK_SIZE | Size of the byte buffer that will be used to read requests from the API caller in bytes.  | 40960 bytes |
-
 
 ## API methods
 

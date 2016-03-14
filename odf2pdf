@@ -6,6 +6,7 @@ LOGDIR=${ODF2PDF_LOG_DIR:-$APPDIR}
 WORKERS=${ODF2PDF_WORKERS:-$(nproc)}
 HOST=${ODF2PDF_HOST:-'0.0.0.0'}
 PORT=${ODF2PDF_PORT:-4000}
+echo "Launching odf2pdf with $WORKERS workers at $HOST:$PORT..."
 gunicorn3 -w $WORKERS --bind $HOST:$PORT \
         --chdir $APPDIR \
         --access-logfile $LOGDIR/odf2pdf.access.log \
