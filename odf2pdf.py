@@ -45,6 +45,8 @@ logger.debug("Debug mode is enabled")
 backend = LibreOffice()
 logger.info("odf2pdf converter ready to process requests")
 
+# TODO: print out the application configuration
+
 @app.route('/api/v1/pdf', methods = ['POST'])
 def convert_pdf():
     content_type = request.headers.get('Content-type')

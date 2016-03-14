@@ -2,13 +2,16 @@
 # Launch the application
 # Debian: apt-get install gunicorn3
 APPDIR="$(dirname "$0")"
-LOGDIR=${ODF2PDF_LOG_DIR:-$APPDIR}
+#LOGDIR=${ODF2PDF_LOG_DIR:-$APPDIR}
 WORKERS=${ODF2PDF_WORKERS:-$(nproc)}
 HOST=${ODF2PDF_HOST:-'0.0.0.0'}
 PORT=${ODF2PDF_PORT:-4000}
 echo "Launching odf2pdf with $WORKERS workers at $HOST:$PORT..."
+# TODO: pass the rest of the config parameters to the application
 gunicorn3 -w $WORKERS --bind $HOST:$PORT \
         --chdir $APPDIR \
-        --access-logfile $LOGDIR/odf2pdf.access.log \
-        --error-logfile $LOGDIR/odf2pdf.error.log \
+        -e GUNICORN=1 \
         odf2pdf:app
+#        --access-logfile $LOGDIR/odf2pdf.access.log \
+#        --error-logfile $LOGDIR/odf2pdf.error.log \
+
