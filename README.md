@@ -13,7 +13,7 @@ Application configuration is controlled through environment variables.
 | ODF2PDF_LOG_DIR | Location in the filesystem where logs will be saved.  | Default path where the application is located  |
 | ODF2PDF_HOST  | Host from which application requests will be served. | 0.0.0.0  |
 | ODF2PDF_PORT  | Default port number.  | 4000 |
-| ODF2PDF_LOG_LEVEL | Log level to be used in the application.  | INFO  |
+| ODF2PDF_WAIT_FOR_START | How long the worker should wait for LibreOffice in seconds.| 10 |
 | ODF2PDF_WORKERS | How many workers will be instantiated. Each worker is bound to a LibreOffice server instance. | One worker per processor core. |
 | ODF2PDF_REQUEST_CHUNK_SIZE | Size of the byte buffer that will be used to read requests from the API caller in bytes.  | 40960 bytes |
 
@@ -44,12 +44,24 @@ HTTP Return Codes:
 
 ## Testing
 
-curl -v -H "Content-Type: application/vnd.oasis.opendocument.text" -o document.pdf http://localhost:4000/api/v1/pdf --data-binary @samples/0116GS3-OpenSourceStandardsDoc.odt
+* odt
+```ShellSession
+curl -v -H "Content-Type: application/vnd.oasis.opendocument.text" -o lorem.pdf http://localhost:4000/api/v1/pdf --data-binary @samples/lorem.odt
+```
+* docx
+```ShellSession
+curl -v -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" -o lorem.pdf http://localhost:4000/api/v1/pdf --data-binary @samples/lorem.docx
+```
 
 ## Benchmarking
 
-* Simple document: ab -n 100 -c 10 -T 'application/vnd.oasis.opendocument.text' -p samples/lorem.odt http://localhost:4000/api/v1/pdf
-* Complex document: ab -n 100 -c 10 -T 'application/vnd.oasis.opendocument.text' -p samples/lorem.odt http://localhost:4000/api/v1/pdf
+* odt
+** Simple document: ab -n 100 -c 10 -T 'application/vnd.oasis.opendocument.text' -p samples/lorem.odt http://localhost:4000/api/v1/pdf
+** Complex document: ab -n 100 -c 10 -T 'application/vnd.oasis.opendocument.text' -p samples/0116GS3-OpenSourceStandardsDoc.odt http://localhost:4000/api/v1/pdf
+
+* docx
+** Simple document: ab -n 100 -c 10 -T 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -p samples/lorem.docx http://localhost:4000/api/v1/pdf
+** Complex document: ab -n 100 -c 10 -T 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -p samples/demo.docx http://localhost:4000/api/v1/pdf
 
 ## TODOs
 
