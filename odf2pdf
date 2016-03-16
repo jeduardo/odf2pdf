@@ -19,4 +19,5 @@ export PYTHONUNBUFFERED=TRUE
         --log-file -\
         --access-logfile -\
         --error-logfile -\
+	"$@" \
         odf2pdf:app

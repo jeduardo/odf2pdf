@@ -11,10 +11,11 @@ RUN apt-get update && apt-get -y -q install libreoffice libreoffice-writer ure l
 RUN apt-get install fontforge -y
 RUN wget https://gist.github.com/maxwelleite/10774746/raw/ttf-vista-fonts-installer.sh -q -O - | bash
 
-RUN apt-get install gunicorn3
+RUN apt-get install gunicorn3 -y
+RUN apt-get install python3-flask -y
 
 COPY odf2pdf.py /odf2pdf.py
-COPY libreoffice.py /odf2pdf.py
+COPY libreoffice.py /libreoffice.py
 COPY odf2pdf /odf2pdf
 RUN chmod +x /odf2pdf
 
