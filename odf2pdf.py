@@ -31,7 +31,7 @@ VALID_MIME_TYPES = {
 }
 
 # Application configuration
-REQUEST_CHUNK_SIZE = os.environ.get('ODF2PDF_REQUEST_CHUNK_SIZE', 40960)
+REQUEST_CHUNK_SIZE = int(os.environ.get('ODF2PDF_REQUEST_CHUNK_SIZE', 40960))
 LOG_LEVEL = os.environ.get('ODF2PDF_LOG_LEVEL', 'INFO')
 
 # Configuring application logger
@@ -41,11 +41,12 @@ logger = logging.getLogger(__name__)
 # Instantiating application
 app = Flask(__name__)
 logger.info("Booting up odf2pdf converter")
+logger.info("Request chunk size is %d bytes" % REQUEST_CHUNK_SIZE)
+logger.info("Default log level is %s" % LOG_LEVEL)
 logger.debug("Debug mode is enabled")
 backend = LibreOffice()
 logger.info("odf2pdf converter ready to process requests")
 
-# TODO: print out the application configuration
 
 @app.route('/api/v1/pdf', methods = ['POST'])
 def convert_pdf():

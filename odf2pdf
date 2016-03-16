@@ -6,12 +6,17 @@ APPDIR="$(dirname "$0")"
 WORKERS=${ODF2PDF_WORKERS:-$(nproc)}
 HOST=${ODF2PDF_HOST:-'0.0.0.0'}
 PORT=${ODF2PDF_PORT:-4000}
+LOG_LEVEL=${ODF2PDF_LOG_LEVEL:-'INFO'}
+REQUEST_CHUNK_SIZE=${ODF2PDF_REQUEST_CHUNK_SIZE:-40960}
+WAIT_FOR_START=${ODF2PDF_WAIT_FOR_START:-10}
 echo "Launching odf2pdf with $WORKERS workers at $HOST:$PORT..."
-# TODO: pass the rest of the config parameters to the application
-gunicorn3 -w $WORKERS --bind $HOST:$PORT \
+export PYTHONUNBUFFERED=TRUE
+gunicorn3 -R -w $WORKERS --bind $HOST:$PORT \
         --chdir $APPDIR \
-        -e GUNICORN=1 \
+        -e ODF2PDF_LOG_LEVEL="$LOG_LEVEL" \
+        -e ODF2PDF_REQUEST_CHUNK_SIZE="$REQUEST_CHUNK_SIZE" \
+        -e ODF2PDF_WAIT_FOR_START="$WAIT_FOR_START" \
+        --log-file -\
+        --access-logfile -\
+        --error-logfile -\
         odf2pdf:app
-#        --access-logfile $LOGDIR/odf2pdf.access.log \
-#        --error-logfile $LOGDIR/odf2pdf.error.log \
-

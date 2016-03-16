@@ -38,6 +38,9 @@ from com.sun.star.beans import PropertyValue
 
 logger = logging.getLogger(__name__)
 
+# Engine configuration
+WAIT_FOR_START = int(os.environ.get('ODF2PDF_WAIT_FOR_START', 5))
+
 class DocumentFamily(Enum):
     TextDocument = 0
     WebDocument = 1
@@ -241,7 +244,8 @@ class LibreOffice(object):
         # subprocess.Popen('soffice --headless --norestore --accept="%s"' % self.connectionString, shell=True, stdin=None, stdout=None, stderr=None)
         self.proc = subprocess.Popen('soffice "-env:UserInstallation=file:////tmp/libreoffice-%s" --headless --norestore --accept="%s"' % (self.pipe, self.connectionString), shell=True, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
         self.pid = self.proc.pid
-        time.sleep(3)
+        logger.info("Waiting for libreoffice to start (%s)" % self.connectionString)
+        time.sleep(WAIT_FOR_START)
 
     def __str__(self):
         return "LibreOffice instance with PID %d and pipe %s" % (self.pid, self.pipe)
