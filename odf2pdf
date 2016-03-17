@@ -1,6 +1,5 @@
 #!/bin/bash
-# Launch the application
-# Debian: apt-get install gunicorn3
+# odf2pdf launcher using gunicorn
 SCRIPT="$(readlink -f $0)"
 APPDIR="$(dirname $SCRIPT)"
 WORKERS=${ODF2PDF_WORKERS:-$(nproc)}
@@ -12,12 +11,12 @@ WAIT_FOR_START=${ODF2PDF_WAIT_FOR_START:-10}
 echo "Launching odf2pdf with $WORKERS workers at $HOST:$PORT..."
 export PYTHONUNBUFFERED=TRUE
 /usr/bin/gunicorn3 -R -w $WORKERS --bind $HOST:$PORT \
-        --chdir $APPDIR \
-        -e ODF2PDF_LOG_LEVEL="$LOG_LEVEL" \
-        -e ODF2PDF_REQUEST_CHUNK_SIZE="$REQUEST_CHUNK_SIZE" \
-        -e ODF2PDF_WAIT_FOR_START="$WAIT_FOR_START" \
-        --log-file -\
-        --access-logfile -\
-        --error-logfile -\
-	"$@" \
-        odf2pdf:app
+    --chdir $APPDIR \
+    -e ODF2PDF_LOG_LEVEL="$LOG_LEVEL" \
+    -e ODF2PDF_REQUEST_CHUNK_SIZE="$REQUEST_CHUNK_SIZE" \
+    -e ODF2PDF_WAIT_FOR_START="$WAIT_FOR_START" \
+    --log-file -\
+    --access-logfile -\
+    --error-logfile -\
+    "$@" \
+    odf2pdf:app
