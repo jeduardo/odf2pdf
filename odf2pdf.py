@@ -35,7 +35,22 @@ REQUEST_CHUNK_SIZE = int(os.environ.get('ODF2PDF_REQUEST_CHUNK_SIZE', 40960))
 LOG_LEVEL = os.environ.get('ODF2PDF_LOG_LEVEL', 'INFO')
 
 # Configuring application logger
-logging.basicConfig(level=logging._nameToLevel[LOG_LEVEL])
+class RequestLogger(logging.Filter):
+    def filter(self, record):
+        if request:
+            id = request.headers.get('X-Request-Id')
+            if id:
+                record.id = id
+            else:
+                record.id = 'NOID'
+        else:
+            record.id = 'INIT'
+            return True
+
+logging.basicConfig(level=logging._nameToLevel[LOG_LEVEL],
+                    format='%(asctime)-15s %(name)-5s %(levelname)-8s %(id)-15s %(message)s')
+for handler in logging.root.handlers:
+    handler.addFilter(RequestLogger())
 logger = logging.getLogger(__name__)
 
 # Instantiating application
@@ -46,7 +61,6 @@ logger.info("Default log level is %s" % LOG_LEVEL)
 logger.debug("Debug mode is enabled")
 backend = LibreOffice()
 logger.info("odf2pdf converter ready to process requests")
-
 
 @app.route('/api/v1/pdf', methods = ['POST'])
 def convert_pdf():
@@ -84,6 +98,7 @@ def convert_pdf():
         try:
             backend.convertFile(suffix, "pdf", tmp.name)
             logger.debug("Sending file %s back to caller" % res)
+            logging.info("Converted")
             return send_file(res)
         except Exception as e:
             return make_response(jsonify({'error': str(e)}), 500)
