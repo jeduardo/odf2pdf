@@ -39,7 +39,7 @@ from com.sun.star.beans import PropertyValue
 logger = logging.getLogger(__name__)
 
 # Engine configuration
-WAIT_FOR_START = int(os.environ.get('ODF2PDF_WAIT_FOR_START', 5))
+WAIT_FOR_START = int(os.environ.get('ODF2PDF_WAIT_FOR_START', 10))
 
 class DocumentFamily(Enum):
     TextDocument = 0
