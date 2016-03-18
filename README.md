@@ -56,12 +56,12 @@ curl -v -H "Content-Type: application/vnd.openxmlformats-officedocument.wordproc
 ## Benchmarking
 
 * odt
-** Simple document: ab -n 1000 -c 10 -T 'application/vnd.oasis.opendocument.text' -p samples/lorem.odt http://localhost:4000/api/v1/pdf
-** Complex document: ab -n 1000 -c 10 -T 'application/vnd.oasis.opendocument.text' -p samples/0116GS3-OpenSourceStandardsDoc.odt http://localhost:4000/api/v1/pdf
+    * Simple document: ```ab -n 1000 -c 10 -T 'application/vnd.oasis.opendocument.text' -p samples/lorem.odt http://localhost:4000/api/v1/pdf```
+    * Complex document: ```ab -n 1000 -c 10 -T 'application/vnd.oasis.opendocument.text' -p samples/0116GS3-OpenSourceStandardsDoc.odt http://localhost:4000/api/v1/pdf```
 
 * docx
-** Simple document: ab -n 1000 -c 10 -T 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -p samples/lorem.docx http://localhost:4000/api/v1/pdf
-** Complex document: ab -n 1000 -c 10 -T 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -p samples/demo.docx http://localhost:4000/api/v1/pdf
+    * Simple document: ```ab -n 1000 -c 10 -T 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -p samples/lorem.docx http://localhost:4000/api/v1/pdf```
+    * Complex document: ```ab -n 1000 -c 10 -T 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -p samples/demo.docx http://localhost:4000/api/v1/pdf```
 
 ## TODOs
 
