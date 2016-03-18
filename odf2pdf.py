@@ -10,6 +10,8 @@ from flask import Flask, jsonify, make_response, request, send_file
 
 from libreoffice import LibreOffice
 
+from nocache import nocache
+
 VALID_MIME_TYPES = {
     'application/vnd.oasis.opendocument.text': 'odt',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
@@ -47,8 +49,8 @@ logger.debug("Debug mode is enabled")
 backend = LibreOffice()
 logger.info("odf2pdf converter ready to process requests")
 
-
 @app.route('/api/v1/pdf', methods = ['POST'])
+@nocache
 def convert_pdf():
     content_type = request.headers.get('Content-type')
     if content_type not in VALID_MIME_TYPES:
