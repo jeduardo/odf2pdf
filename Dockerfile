@@ -14,11 +14,11 @@ RUN wget https://gist.github.com/maxwelleite/10774746/raw/ttf-vista-fonts-instal
 
 RUN apt-get install python3 python3-gunicorn gunicorn3 python3-flask -y
 
-COPY odf2pdf.py /odf2pdf.py
-COPY libreoffice.py /libreoffice.py
-COPY odf2pdf /odf2pdf
-RUN chmod +x /odf2pdf
+RUN mkdir /srv/odf2pdf
+COPY *.py /srv/odf2pdf/
+COPY odf2pdf /srv/odf2pdf/
+RUN chmod +x /srv/odf2pdf/odf2pdf
 
 VOLUME ["/tmp"]
 
-ENTRYPOINT ["/odf2pdf"]
+ENTRYPOINT ["/srv/odf2pdf/odf2pdf"]
