@@ -1,16 +1,14 @@
-__author__ = 'jeduardo'
-
 import atexit
 import contextlib
 import logging
 import os
 import tempfile
 
+from datetime import datetime
 from flask import Flask, jsonify, make_response, request, send_file
-
 from libreoffice import LibreOffice
-
 from nocache import nocache
+from requestid import requestid
 
 VALID_MIME_TYPES = {
     'application/vnd.oasis.opendocument.text': 'odt',
@@ -36,8 +34,9 @@ VALID_MIME_TYPES = {
 REQUEST_CHUNK_SIZE = int(os.environ.get('ODF2PDF_REQUEST_CHUNK_SIZE', 40960))
 LOG_LEVEL = os.environ.get('ODF2PDF_LOG_LEVEL', 'INFO')
 
-# Configuring application logger
-class RequestLogger(logging.Filter):
+
+# Filter to add request ID to logger
+class RequestIdFilter(logging.Filter):
     def filter(self, record):
         if request:
             id = request.headers.get('X-Request-Id')
@@ -49,14 +48,16 @@ class RequestLogger(logging.Filter):
             record.id = 'INIT'
             return True
 
-logging.basicConfig(level=logging._nameToLevel[LOG_LEVEL],
-                    format='%(asctime)-15s %(name)-5s %(levelname)-8s %(id)-15s %(message)s')
-for handler in logging.root.handlers:
-    handler.addFilter(RequestLogger())
-logger = logging.getLogger(__name__)
 
 # Instantiating application
 app = Flask(__name__)
+# Configuring logger
+logging.basicConfig(level=logging._nameToLevel[LOG_LEVEL],
+                    format='%(name)s %(levelname)s %(id)s %(message)s')
+for handler in logging.root.handlers:
+    handler.addFilter(RequestIdFilter())
+logger = logging.getLogger(__name__)
+# Bootstrapping
 logger.info("Booting up odf2pdf converter")
 logger.info("Request chunk size is %d bytes" % REQUEST_CHUNK_SIZE)
 logger.info("Default log level is %s" % LOG_LEVEL)
@@ -64,13 +65,16 @@ logger.debug("Debug mode is enabled")
 backend = LibreOffice()
 logger.info("odf2pdf converter ready to process requests")
 
+
 @app.route('/api/v1/pdf', methods = ['POST'])
 @nocache
+@requestid
 def convert_pdf():
+    start_time = datetime.now()
     content_type = request.headers.get('Content-type')
     if content_type not in VALID_MIME_TYPES:
         error = "%s: format not supported" % content_type
-        logger.debug(error)
+        logger.error(error)
         return make_response(jsonify({'error': error}), 415)
     else:
         suffix = VALID_MIME_TYPES[content_type]
@@ -78,6 +82,7 @@ def convert_pdf():
     content_length = int(request.headers.get('Content-length'))
     if content_length == 0:
         error = "request data has zero length"
+        logger.error(error)
         return make_response(jsonify({'error': error}), 411)
 
     # Receiving the temporary file
@@ -101,10 +106,13 @@ def convert_pdf():
         try:
             backend.convertFile(suffix, "pdf", tmp.name)
             logger.debug("Sending file %s back to caller" % res)
-            logging.info("Converted")
+            delta = datetime.now() - start_time
+            logger.info("Converted %s/%d bytes in %d"  % (content_type, content_length, delta.total_seconds()))
             return send_file(res)
         except Exception as e:
-            return make_response(jsonify({'error': str(e)}), 500)
+            error = str(e)
+            logger.error(error)
+            return make_response(jsonify({'error': error}), 500)
         finally:
             with contextlib.suppress(FileNotFoundError):
                 logger.debug("Removing temp file %s", tmp.name)
@@ -114,7 +122,7 @@ def convert_pdf():
 
 @atexit.register
 def cleanup():
-    logger.info("Shutting down odf2pdf converter")
+    app.logger.info("Shutting down odf2pdf converter")
     backend.shutdown()
 
 if __name__ == '__main__':
