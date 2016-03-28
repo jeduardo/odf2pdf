@@ -182,11 +182,13 @@ class LibreOffice(object):
             if self.desktop:
                 self.desktop.terminate()
         except Exception as e:
+            logger.error("Error terminating process: %s" % str(e))
             raise LibreOfficeTerminationException(e)
 
         return True
 
     def convertFile(self, inputFormat, outputFormat, inputFilename):
+        logger.debug("Converting %s to %s; reading from %s" % (inputFormat, outputFormat, inputFilename))
         if self.desktop:
             tOldFileName = os.path.splitext(inputFilename)
             outputFilename = "%s.%s" % (tOldFileName[0], outputFormat)
@@ -203,6 +205,7 @@ class LibreOffice(object):
                 try:
                     doc.refresh()
                 except Exception as e:
+                    logger.error("Error loading document: %s" % str(e))
                     raise LibreOfficeConversionException(e)
 
                 docFamily = self.getDocumentFamily(doc)
@@ -211,7 +214,9 @@ class LibreOffice(object):
                         outputProperties = LIBREOFFICE_EXPORT_TYPES[outputFormat][docFamily]
                         doc.storeToURL(outputUrl, self.propertyTuple(outputProperties))
                         doc.close(True)
+                        logger.debug("Document converted successfully by LibreOffice")
                     except Exception as e:
+                        logger.error("Error converting document: %s" % str(e))
                         raise LibreOfficeConversionException(e)
 
     def propertyTuple(self, propDict):

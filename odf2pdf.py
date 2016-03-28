@@ -8,7 +8,7 @@ from datetime import datetime
 from flask import Flask, jsonify, make_response, request, send_file
 from libreoffice import LibreOffice
 from nocache import nocache
-from requestid import requestid
+from requestid import requestid, RequestIdFilter
 
 VALID_MIME_TYPES = {
     'application/vnd.oasis.opendocument.text': 'odt',
@@ -34,30 +34,17 @@ VALID_MIME_TYPES = {
 REQUEST_CHUNK_SIZE = int(os.environ.get('ODF2PDF_REQUEST_CHUNK_SIZE', 40960))
 LOG_LEVEL = os.environ.get('ODF2PDF_LOG_LEVEL', 'INFO')
 
-
-# Filter to add request ID to logger
-class RequestIdFilter(logging.Filter):
-    def filter(self, record):
-        if request:
-            id = request.headers.get('X-Request-Id')
-            if id:
-                record.id = id
-            else:
-                record.id = 'NOID'
-        else:
-            record.id = 'INIT'
-            return True
-
-
 # Instantiating application
 app = Flask(__name__)
 # Configuring logger
 logging.basicConfig(level=logging._nameToLevel[LOG_LEVEL],
-                    format='%(name)s %(levelname)s %(id)s %(message)s')
+                    format='%(asctime)s %(name)s [%(levelname)s] %(request_id)s "%(message)s"')
 for handler in logging.root.handlers:
     handler.addFilter(RequestIdFilter())
 logger = logging.getLogger(__name__)
+
 # Bootstrapping
+logger = app.logger
 logger.info("Booting up odf2pdf converter")
 logger.info("Request chunk size is %d bytes" % REQUEST_CHUNK_SIZE)
 logger.info("Default log level is %s" % LOG_LEVEL)
@@ -107,7 +94,7 @@ def convert_pdf():
             backend.convertFile(suffix, "pdf", tmp.name)
             logger.debug("Sending file %s back to caller" % res)
             delta = datetime.now() - start_time
-            logger.info("Converted %s/%d bytes in %d"  % (content_type, content_length, delta.total_seconds()))
+            logger.info("Converted %s with %d bytes in %d ms"  % (content_type, content_length, delta.microseconds / 1000))
             return send_file(res)
         except Exception as e:
             error = str(e)
@@ -120,10 +107,12 @@ def convert_pdf():
                 logger.debug("Removing temp PDF file %s", res)
                 os.remove(res)
 
+
 @atexit.register
 def cleanup():
-    app.logger.info("Shutting down odf2pdf converter")
+    logger.info("Shutting down odf2pdf converter")
     backend.shutdown()
 
 if __name__ == '__main__':
-    app.run(debug = False, port = 4000)
+#    app.run(debug = True, port = 4000)
+    app.run(port = 4000)
