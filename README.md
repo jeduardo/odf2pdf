@@ -30,6 +30,7 @@ Input parameters:
 * (Header) Content-Type: MIME type of the document. Supported content types:
     * application/vnd.oasis.opendocument.text (odt)
     * application/vnd.openxmlformats-officedocument.wordprocessingml.document (docx)
+* (Header) X-Request-Id: optional header, associate a particular ID to the request.
 * (Body) Request body: binary file to be conveted
 Output parameters:
 * (HTTP Code) HTTP result code: 200 OK
@@ -47,10 +48,13 @@ HTTP Return Codes:
 * odt
 ```ShellSession
 curl -v -H "Content-Type: application/vnd.oasis.opendocument.text" -o lorem.pdf http://localhost:4000/api/v1/pdf --data-binary @samples/lorem.odt
+curl -v -H "Content-Type: application/vnd.oasis.opendocument.text" -H "X-Request-Id: my_req_id" -o lorem.pdf http://localhost:4000/api/v1/pdf --data-binary @samples/lorem.odt
 ```
+
 * docx
 ```ShellSession
 curl -v -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" -o lorem.pdf http://localhost:4000/api/v1/pdf --data-binary @samples/lorem.docx
+curl -v -H "Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document" -H "X-Request-Id: my_req_id"_-o lorem.pdf http://localhost:4000/api/v1/pdf --data-binary @samples/lorem.docx
 ```
 
 ## Benchmarking
@@ -62,10 +66,6 @@ curl -v -H "Content-Type: application/vnd.openxmlformats-officedocument.wordproc
 * docx
     * Simple document: ```ab -n 1000 -c 10 -T 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -p samples/lorem.docx http://localhost:4000/api/v1/pdf```
     * Complex document: ```ab -n 1000 -c 10 -T 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' -p samples/demo.docx http://localhost:4000/api/v1/pdf```
-
-## TODOs
-
-* Unique IDs per request for logging
 
 ## Fonts
 
@@ -84,5 +84,4 @@ For best results, install the following packages:
 * Official reference for HTTP return codes: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 * OpenOffice Connection URL: https://www.openoffice.org/udk/common/man/spec/uno-url.html
 * Starting multiple LibreOffice processes concurrently: https://ask.libreoffice.org/en/question/42975/how-can-i-run-multiple-instances-of-sofficebin-at-a-time/
-
-
+* Adding request IDs to Flask: http://blog.mcpolemic.com/2016/01/18/adding-request-ids-to-flask.html
